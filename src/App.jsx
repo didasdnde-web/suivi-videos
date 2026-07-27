@@ -29,11 +29,11 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   const [videos, setVideos] = useState([]);
   const [filterAssignee, setFilterAssignee] = useState('tous');
   const [filterStatus, setFilterStatus] = useState('tous');
-  
+
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [formData, setFormData] = useState({});
@@ -70,7 +70,7 @@ export default function App() {
       .select('*')
       .order('date_prevue', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
-      
+
     if (error) {
       console.error(error);
     } else {
@@ -152,22 +152,22 @@ export default function App() {
           <h1 className="text-2xl font-semibold mb-6 text-center text-gray-900">Connexion</h1>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               required
               className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-gray-500"
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium mb-1 text-gray-700">Mot de passe</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               required
               className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-gray-500"
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <button type="submit" className="w-full bg-black text-white p-2 rounded hover:bg-gray-800">Se connecter</button>
@@ -205,7 +205,7 @@ export default function App() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Suivi Vidéos</h1>
           </div>
-          
+
           <div className="flex-1 w-full sm:max-w-md mx-4 bg-gray-100 p-2 rounded flex flex-col items-center justify-center text-sm border border-gray-200">
             <div className="font-semibold mb-1 text-gray-800">Semaine en cours : {statsTotal.faites} / {statsTotal.prevues}</div>
             <div className="flex gap-4 text-xs w-full justify-center">
@@ -219,7 +219,7 @@ export default function App() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={() => openPanel()} className="flex items-center gap-1 bg-black text-white px-3 py-2 rounded text-sm hover:bg-gray-800">
               <Plus size={16} /> Nouvelle vidéo
@@ -235,8 +235,8 @@ export default function App() {
         <div className="mb-4 flex flex-col sm:flex-row gap-4 bg-white p-4 rounded border border-gray-200">
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-500 uppercase mb-1">Filtre Personne</label>
-            <select 
-              value={filterAssignee} 
+            <select
+              value={filterAssignee}
               onChange={(e) => setFilterAssignee(e.target.value)}
               className="border border-gray-300 rounded p-1.5 text-sm"
             >
@@ -247,8 +247,8 @@ export default function App() {
           </div>
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-500 uppercase mb-1">Filtre Statut</label>
-            <select 
-              value={filterStatus} 
+            <select
+              value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="border border-gray-300 rounded p-1.5 text-sm"
             >
@@ -278,8 +278,8 @@ export default function App() {
                 </tr>
               ) : (
                 filteredVideos.map(video => (
-                  <tr 
-                    key={video.id} 
+                  <tr
+                    key={video.id}
                     onClick={() => openPanel(video)}
                     className="hover:bg-gray-50 cursor-pointer"
                   >
@@ -290,9 +290,8 @@ export default function App() {
                         value={video.statut}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleStatusChange(e, video.id)}
-                        className={`text-xs px-2 py-1 border-0 rounded font-medium appearance-none cursor-pointer ${
-                          STATUS_OPTIONS.find(o => o.value === video.statut)?.color
-                        }`}
+                        className={`text-xs px-2 py-1 border-0 rounded font-medium appearance-none cursor-pointer ${STATUS_OPTIONS.find(o => o.value === video.statut)?.color
+                          }`}
                       >
                         {STATUS_OPTIONS.map(opt => (
                           <option key={opt.value} value={opt.value} className="bg-white text-black">{opt.label}</option>
@@ -331,36 +330,36 @@ export default function App() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4">
               <form id="video-form" onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Titre *</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    required
                     value={formData.titre || ''}
-                    onChange={(e) => setFormData({...formData, titre: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Idée (description)</label>
-                  <textarea 
+                  <textarea
                     rows="3"
                     value={formData.idee || ''}
-                    onChange={(e) => setFormData({...formData, idee: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, idee: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                   ></textarea>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Assigné à</label>
-                    <select 
+                    <select
                       value={formData.assigne_a || 'moi'}
-                      onChange={(e) => setFormData({...formData, assigne_a: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, assigne_a: e.target.value })}
                       className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                     >
                       <option value="moi">Moi</option>
@@ -369,9 +368,9 @@ export default function App() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Statut</label>
-                    <select 
+                    <select
                       value={formData.statut || 'idee'}
-                      onChange={(e) => setFormData({...formData, statut: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
                       className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                     >
                       {STATUS_OPTIONS.map(opt => (
@@ -384,19 +383,19 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Date prévue</label>
-                    <input 
+                    <input
                       type="date"
                       value={formData.date_prevue || ''}
-                      onChange={(e) => setFormData({...formData, date_prevue: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, date_prevue: e.target.value })}
                       className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Date publiée</label>
-                    <input 
+                    <input
                       type="date"
                       value={formData.date_publiee || ''}
-                      onChange={(e) => setFormData({...formData, date_publiee: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, date_publiee: e.target.value })}
                       className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                     />
                   </div>
@@ -404,16 +403,16 @@ export default function App() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Commentaires</label>
-                  <textarea 
+                  <textarea
                     rows="4"
                     value={formData.commentaires || ''}
-                    onChange={(e) => setFormData({...formData, commentaires: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, commentaires: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
                   ></textarea>
                 </div>
               </form>
             </div>
-            
+
             <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
               <button onClick={closePanel} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100">
                 Annuler
