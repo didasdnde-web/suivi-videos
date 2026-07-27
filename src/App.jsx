@@ -31,7 +31,7 @@ export default function App() {
   const [password, setPassword] = useState('');
 
   const [videos, setVideos] = useState([]);
-  const [filterAssignee, setFilterAssignee] = useState('tous');
+  const [filterOwner, setFilterOwner] = useState('mes_videos');
   const [filterStatus, setFilterStatus] = useState('tous');
 
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -105,7 +105,6 @@ export default function App() {
       setFormData({
         titre: '',
         idee: '',
-        assigne_a: 'moi',
         statut: 'idee',
         date_prevue: '',
         date_publiee: '',
@@ -135,6 +134,7 @@ export default function App() {
         alert(error.message);
       }
     } else {
+      payload.user_id = session.user.id;
       const { error } = await supabase.from('videos').insert([payload]);
       if (!error) {
         closePanel();
@@ -177,26 +177,30 @@ export default function App() {
   }
 
   const filteredVideos = videos.filter(v => {
-    if (filterAssignee !== 'tous' && v.assigne_a !== filterAssignee) return false;
+    const isMine = v.user_id === session.user.id;
+    if (filterOwner === 'mes_videos' && !isMine) return false;
+    if (filterOwner === 'autres' && isMine) return false;
+
     if (filterStatus === 'publiees' && v.statut !== 'publiee') return false;
     if (filterStatus === 'non_publiees' && v.statut === 'publiee') return false;
     return true;
   });
 
-  const getStats = (assignee) => {
+  const getStats = (forMe) => {
     let prevues = 0;
     let faites = 0;
     videos.forEach(v => {
-      if (assignee && v.assigne_a !== assignee) return;
+      const isMine = v.user_id === session.user.id;
+      if (forMe !== null && isMine !== forMe) return;
       if (isDateInCurrentWeek(v.date_prevue)) prevues++;
       if (v.statut === 'publiee' && isDateInCurrentWeek(v.date_publiee)) faites++;
     });
     return { prevues, faites };
   };
 
-  const statsTotal = getStats();
-  const statsMoi = getStats('moi');
-  const statsPartenaire = getStats('partenaire');
+  const statsTotal = getStats(null);
+  const statsMoi = getStats(true);
+  const statsPartenaire = getStats(false);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col relative">
@@ -221,9 +225,11 @@ export default function App() {
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={() => openPanel()} className="flex items-center gap-1 bg-black text-white px-3 py-2 rounded text-sm hover:bg-gray-800">
-              <Plus size={16} /> Nouvelle vidéo
-            </button>
+            {filterOwner === 'mes_videos' && (
+              <button onClick={() => openPanel()} className="flex items-center gap-1 bg-black text-white px-3 py-2 rounded text-sm hover:bg-gray-800">
+                <Plus size={16} /> Nouvelle vidéo
+              </button>
+            )}
             <button onClick={handleLogout} className="flex items-center gap-1 bg-gray-200 px-3 py-2 rounded text-sm hover:bg-gray-300">
               <LogOut size={16} /> Quitter
             </button>
@@ -232,20 +238,22 @@ export default function App() {
       </header>
 
       <main className="flex-1 p-4 max-w-6xl mx-auto w-full">
-        <div className="mb-4 flex flex-col sm:flex-row gap-4 bg-white p-4 rounded border border-gray-200">
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-500 uppercase mb-1">Filtre Personne</label>
-            <select
-              value={filterAssignee}
-              onChange={(e) => setFilterAssignee(e.target.value)}
-              className="border border-gray-300 rounded p-1.5 text-sm"
+        <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white p-4 rounded border border-gray-200">
+          <div className="flex border-b border-gray-200 w-full sm:w-auto">
+            <button
+              onClick={() => setFilterOwner('mes_videos')}
+              className={`px-4 py-2 text-sm font-medium ${filterOwner === 'mes_videos' ? 'border-b-2 border-black text-black' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              <option value="tous">Tous</option>
-              <option value="moi">Moi</option>
-              <option value="partenaire">Partenaire</option>
-            </select>
+              Mes vidéos
+            </button>
+            <button
+              onClick={() => setFilterOwner('autres')}
+              className={`px-4 py-2 text-sm font-medium ${filterOwner === 'autres' ? 'border-b-2 border-black text-black' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Les vidéos du partenaire
+            </button>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col w-full sm:w-auto">
             <label className="text-xs font-medium text-gray-500 uppercase mb-1">Filtre Statut</label>
             <select
               value={filterStatus}
@@ -264,7 +272,7 @@ export default function App() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-sm text-gray-500">
                 <th className="p-3 font-medium">Titre</th>
-                <th className="p-3 font-medium">Assigné à</th>
+                <th className="p-3 font-medium">Créateur</th>
                 <th className="p-3 font-medium">Statut</th>
                 <th className="p-3 font-medium">Date prévue</th>
                 <th className="p-3 font-medium">Date publiée</th>
@@ -274,45 +282,54 @@ export default function App() {
             <tbody className="divide-y divide-gray-100">
               {filteredVideos.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-gray-500">Aucune vidéo trouvée</td>
+                  <td colSpan="6" className="p-6 text-center text-gray-500">Aucune vidéo trouvée</td>
                 </tr>
               ) : (
-                filteredVideos.map(video => (
-                  <tr
-                    key={video.id}
-                    onClick={() => openPanel(video)}
-                    className="hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="p-3 font-medium text-gray-900">{video.titre}</td>
-                    <td className="p-3 capitalize">{video.assigne_a}</td>
-                    <td className="p-3">
-                      <select
-                        value={video.statut}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleStatusChange(e, video.id)}
-                        className={`text-xs px-2 py-1 border-0 rounded font-medium appearance-none cursor-pointer ${STATUS_OPTIONS.find(o => o.value === video.statut)?.color
-                          }`}
-                      >
-                        {STATUS_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value} className="bg-white text-black">{opt.label}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-3 text-sm text-gray-600">{video.date_prevue || '-'}</td>
-                    <td className="p-3 text-sm text-gray-600">{video.date_publiee || '-'}</td>
-                    <td className="p-3 text-right">
-                      {video.statut !== 'publiee' && (
-                        <button
-                          onClick={(e) => handleMarkAsDone(e, video.id)}
-                          className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200 flex items-center justify-center ml-auto"
-                          title="Marquer comme faite"
-                        >
-                          <Check size={16} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                filteredVideos.map(video => {
+                  const isMine = video.user_id === session.user.id;
+                  return (
+                    <tr
+                      key={video.id}
+                      onClick={isMine ? () => openPanel(video) : undefined}
+                      className={`hover:bg-gray-50 ${isMine ? 'cursor-pointer' : ''}`}
+                    >
+                      <td className="p-3 font-medium text-gray-900">{video.titre}</td>
+                      <td className="p-3 capitalize text-gray-600">{isMine ? 'Moi' : 'Partenaire'}</td>
+                      <td className="p-3">
+                        {isMine ? (
+                          <select
+                            value={video.statut}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleStatusChange(e, video.id)}
+                            className={`text-xs px-2 py-1 border-0 rounded font-medium appearance-none cursor-pointer ${STATUS_OPTIONS.find(o => o.value === video.statut)?.color
+                              }`}
+                          >
+                            {STATUS_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value} className="bg-white text-black">{opt.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className={`text-xs px-2 py-1 rounded font-medium ${STATUS_OPTIONS.find(o => o.value === video.statut)?.color}`}>
+                            {STATUS_OPTIONS.find(o => o.value === video.statut)?.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-sm text-gray-600">{video.date_prevue || '-'}</td>
+                      <td className="p-3 text-sm text-gray-600">{video.date_publiee || '-'}</td>
+                      <td className="p-3 text-right">
+                        {isMine && video.statut !== 'publiee' && (
+                          <button
+                            onClick={(e) => handleMarkAsDone(e, video.id)}
+                            className="bg-green-100 text-green-700 p-1.5 rounded hover:bg-green-200 flex items-center justify-center ml-auto"
+                            title="Marquer comme faite"
+                          >
+                            <Check size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -354,30 +371,17 @@ export default function App() {
                   ></textarea>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Assigné à</label>
-                    <select
-                      value={formData.assigne_a || 'moi'}
-                      onChange={(e) => setFormData({ ...formData, assigne_a: e.target.value })}
-                      className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
-                    >
-                      <option value="moi">Moi</option>
-                      <option value="partenaire">Partenaire</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Statut</label>
-                    <select
-                      value={formData.statut || 'idee'}
-                      onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
-                      className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
-                    >
-                      {STATUS_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Statut</label>
+                  <select
+                    value={formData.statut || 'idee'}
+                    onChange={(e) => setFormData({ ...formData, statut: e.target.value })}
+                    className="w-full border border-gray-300 rounded p-2 text-sm focus:border-black focus:outline-none"
+                  >
+                    {STATUS_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
